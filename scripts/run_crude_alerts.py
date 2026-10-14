@@ -14,8 +14,21 @@ import telegram
 
 def main():
     if '--test' in sys.argv:
-        ok = telegram.send('Test: crude alerts workflow can reach Telegram.')
-        sys.exit(0 if ok else 1)
+        sys.path.insert(0, os.path.join(ROOT, 'common', 'fyers'))
+        try:
+            import fyers_login
+            fy = fyers_login.get_fyers(force=True)
+            r = fy.history({'symbol': 'MCX:CRUDEOIL-I', 'resolution': '5', 'date_format': '1',
+                            'range_from': __import__('datetime').date.today().isoformat(),
+                            'range_to': __import__('datetime').date.today().isoformat(), 'cont_flag': '1'})
+            fmsg = f"Fyers login OK from GitHub ({len(r.get('candles') or [])} bars today)" if r.get('s') == 'ok' else 'Fyers data FAILED: ' + fyers_login.scrub(r)[:150]
+        except BaseException as e:
+            fmsg = 'Fyers login FAILED from GitHub: ' + type(e).__name__
+            try: fmsg += ' ' + fyers_login.scrub(str(e))[:150]
+            except Exception: pass
+        print(fmsg)
+        ok = telegram.send('Test: crude alerts workflow can reach Telegram. ' + fmsg)
+        sys.exit(0 if ok and 'OK' in fmsg else 1)
     import live_check
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
