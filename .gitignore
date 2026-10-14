@@ -19,3 +19,4 @@ live_log.csv
 
 # backtest outputs (regenerated)
 strategies/*/backtest/*.csv
+state/

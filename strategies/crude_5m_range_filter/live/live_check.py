@@ -5,11 +5,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(os.environ.get('CRUDE_LIVE_DIR', str(Path(__file__).resolve().parent)))
+ROOT = Path(os.environ.get('CRUDE_LIVE_DIR', str(Path(__file__).resolve().parent / 'state')))
+ROOT.mkdir(parents=True, exist_ok=True)
 STATE = Path(os.environ.get('CRUDE_LIVE_STATE', str(ROOT / 'live_state.json')))
 LOG = Path(os.environ.get('CRUDE_LIVE_LOG', str(ROOT / 'live_log.csv')))
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'common' / 'fyers'))
+sys.path.insert(0, os.environ.get('FYERS_LIB_DIR', str(Path(__file__).resolve().parents[3] / 'common' / 'fyers')))
 from fyers_login import get_fyers, scrub
 
 def _looks_like_auth(err: str) -> bool:
@@ -164,8 +165,11 @@ def append_log(row):
     else:
         df.to_csv(LOG, index=False)
 
-def pull_history(fyers, days_back=12):
-    today = dt.datetime.now(IST).date()
+def pull_history(fyers, days_back=12, now=None):
+    now = now or dt.datetime.now(IST)
+    if os.environ.get('CRUDE_REPLAY_FILE'):
+        return replay_history(now, days_back)
+    today = now.date()
     fr = (today - dt.timedelta(days=days_back)).isoformat()
     to = today.isoformat()
     sym = 'MCX:CRUDEOIL26OCTFUT'
@@ -182,6 +186,7 @@ def pull_history(fyers, days_back=12):
     # columns: t o h l c v
     d = pd.DataFrame(candles, columns=['t', 'o', 'h', 'l', 'c', 'v'])
     d = d.drop_duplicates('t').sort_values('t').reset_index(drop=True)
+    d = d[d.t + 300 <= now.timestamp() + 5].reset_index(drop=True)  # completed bars only
     d['dt'] = pd.to_datetime(d.t, unit='s', utc=True).dt.tz_convert('Asia/Kolkata')
     return d, sym
 
@@ -201,8 +206,18 @@ def quotes(fyers, symbols):
     except Exception:
         return {}
 
-def main():
-    now = dt.datetime.now(IST)
+def replay_history(now, days_back):
+    """Offline replay: candles from a cached raw.json-like file, only bars completed by `now`."""
+    raw = json.load(open(os.environ['CRUDE_REPLAY_FILE']))
+    raw = raw.get('cont', raw) if isinstance(raw, dict) else raw
+    d = pd.DataFrame(raw, columns=['t', 'o', 'h', 'l', 'c', 'v'])
+    d = d.drop_duplicates('t').sort_values('t').reset_index(drop=True)
+    lo = (now - dt.timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    d = d[(d.t >= lo) & (d.t + 300 <= now.timestamp())].reset_index(drop=True)
+    d['dt'] = pd.to_datetime(d.t, unit='s', utc=True).dt.tz_convert('Asia/Kolkata')
+    return d, 'REPLAY'
+
+def run_updated(now, d, fut_sym, fyers):
     today = now.date()
     alerts = []  # list of user-facing messages
     meta = {'now': now.isoformat(), 'today': str(today)}
@@ -228,43 +243,16 @@ def main():
     if today.weekday() == 4:
         st['filtered'] = {'reason': 'friday'}
         save_state(st)
-        print(json.dumps({'alerts': [], 'meta': meta, 'note': 'friday_skip'}))
-        return
-
-    try:
-        fyers = get_fyers()
-        # Cached same-day token can still be invalid/expired; validate via history.
-        try:
-            d, fut_sym = pull_history(fyers, days_back=21)
-        except Exception as e1:
-            err1 = scrub(str(e1))
-            if not _looks_like_auth(err1):
-                raise
-            # One forced re-login, then retry history before alerting.
-            fyers = get_fyers(force=True)
-            d, fut_sym = pull_history(fyers, days_back=21)
-    except Exception as e:
-        err = scrub(str(e))
-        already = st.get('fyers_auth_alerted_date') == str(today)
-        if not already and (_looks_like_auth(err) or 'history_fail' in err
-                            or 'Access' in err or 'LOGIN' in err.upper()):
-            msg = 'Fyers login needs refreshing for Crude 5m signal alerts (token/auth failed).'
-            st['fyers_auth_alerted_date'] = str(today)
-            save_state(st)
-            print(json.dumps({'alerts': [msg], 'meta': meta, 'error': err[:200]}))
-            return
-        # other errors: quiet
-        save_state(st)
-        print(json.dumps({'alerts': [], 'meta': meta, 'error': err[:200]}))
-        return
+        meta['note'] = 'friday_skip'
+        return alerts, meta, {}
 
     B = build(d, per=100, mult=3)
     x, H, L, day, flip, ci, atr = B['x'], B['H'], B['L'], B['day'], B['flip'], B['ci'], B['atr']
     n = B['n']
     if today not in B['first']:
         save_state(st)
-        print(json.dumps({'alerts': [], 'meta': {**meta, 'note': 'no_bars_today', 'last': str(B['dt'].iloc[-1])}}))
-        return
+        meta.update({'note': 'no_bars_today', 'last': str(B['dt'].iloc[-1])})
+        return alerts, meta, {}
 
     f0 = B['first'][today]
     last_i = B['last'][today]
@@ -508,10 +496,7 @@ def main():
     # If heads-up was for earlier today but we somehow missed — already handled
 
     save_state(st)
-    print(json.dumps({
-        'alerts': alerts,
-        'meta': meta,
-        'state_summary': {
+    return alerts, meta, {
             'signal_used': st.get('signal_used'),
             'filtered': st.get('filtered'),
             'heads_up_sent': st.get('heads_up_sent'),
@@ -521,7 +506,132 @@ def main():
             'signal': st.get('signal'),
             'trade': st.get('trade'),
         }
-    }, default=str))
+
+
+# ======================= Agent Indicator (original) =======================
+STATE_O = Path(os.environ.get('CRUDE_ORIG_STATE', str(ROOT / 'live_state_original.json')))
+LOG_O = Path(os.environ.get('CRUDE_ORIG_LOG', str(ROOT / 'live_log_original.csv')))
+LOG_O_COLS = ['ts', 'event', 'date', 'direction', 'signal_time', 'entry', 'stop', 'tp1', 'tp2',
+              'risk', 'exit', 'exit_time', 'pts', 'option']
+
+
+def _append_log_o(row):
+    row = {c: row.get(c, '') for c in LOG_O_COLS}
+    pd.DataFrame([row], columns=LOG_O_COLS).to_csv(LOG_O, mode='a', header=not LOG_O.exists(), index=False)
+
+
+def run_original(now, d, fut_sym, fyers):
+    """Original Agent Indicator, matching bt.py/trades.csv: first RF(100,3) flip of the day
+    (no filters, Fridays included), entry at signal close, stop = wider of 10-bar swing or ATR14x1,
+    half off at TP1 (1R), rest at TP2 (1.5R); stop never moved; stop checked first in a bar; else session close."""
+    today = now.date(); alerts = []; meta = {}
+    st = json.load(open(STATE_O)) if STATE_O.exists() else {}
+    if st.get('date') != str(today):
+        st = {'date': str(today), 'trade': None}
+    B = build(d, per=100, mult=3)
+    x, H, L, flip, atr = B['x'], B['H'], B['L'], B['flip'], B['atr']
+    if today not in B['first']:
+        return alerts, {'note': 'no_bars_today'}, st
+    f0, last_i = B['first'][today], B['last'][today]
+    last_dt = B['dt'].iloc[last_i]
+    session_over = (now.hour > 23) or (now.hour == 23 and now.minute >= 30) or (
+        last_dt.hour == 23 and last_dt.minute >= 25 and (now - last_dt).total_seconds() > 240)
+    tstr = lambda k: B['dt'].iloc[k].strftime('%Y-%m-%d %H:%M')
+
+    if st.get('trade') is None:
+        sig = next((i for i in range(max(f0, B['start']), last_i + 1) if flip[i] != 0), None)
+        if sig is not None:
+            s = int(flip[sig]); e = float(x[sig]); sl = float(stopof(B, sig, s)); R = abs(e - sl)
+            tp1, tp2 = e + s * R, e + s * 1.5 * R
+            K = int(round(e / 50) * 50); exp = nearest_opt_exp(today)
+            opt_sym = f"MCX:CRUDEOIL{str(exp.year)[-2:]}{month_code(exp)}{K}{'CE' if s > 0 else 'PE'}"
+            prem = quotes(fyers, [opt_sym]).get(opt_sym) if fyers is not None else None
+            opt_txt = opt_sym + (f" @ {prem:.0f}" if prem is not None else " (premium unavailable)")
+            side = 'BUY' if s > 0 else 'SELL'
+            st['trade'] = dict(s=s, dir=side, signal_time=tstr(sig), entry=e, stop=sl, tp1=tp1, tp2=tp2,
+                               risk=R, option=opt_sym, tp1_hit=False, status='open')
+            alerts.append(f"Agent Indicator: Crude 5m {side} signal at {tstr(sig)}, entry {e:.0f}. "
+                          f"Stop {sl:.0f} ({R:.0f} pts), TP1 {tp1:.0f} (1R, book half), TP2 {tp2:.0f} (1.5R). "
+                          f"ATM option: {opt_txt}.")
+            _append_log_o(dict(ts=now.isoformat(), event='entry', date=str(today), direction=side,
+                               signal_time=tstr(sig), entry=e, stop=sl, tp1=tp1, tp2=tp2, risk=R, option=opt_txt))
+
+    t = st.get('trade')
+    if t and t.get('status') == 'open':
+        s, e, sl, R = t['s'], t['entry'], t['stop'], t['risk']
+        k0 = next((k for k in range(f0, last_i + 1) if tstr(k) == t['signal_time']), None)
+        start = (k0 + 1) if k0 is not None else f0
+        why = None; tp1_hit = False
+        for k in range(start, last_i + 1):
+            adv = s * (e - (L[k] if s > 0 else H[k])); fav = s * ((H[k] if s > 0 else L[k]) - e)
+            if adv >= R:
+                why, px = 'stop', sl; break
+            if fav >= R: tp1_hit = True
+            if tp1_hit and not t['tp1_hit']:
+                t['tp1_hit'] = True; t['tp1_time'] = tstr(k)
+                alerts.append(f"Agent Indicator: Crude 5m TP1 hit at {tstr(k)} ({t['tp1']:.0f}, +{R:.0f} pts). "
+                              f"Book half; rest rides to TP2 {t['tp2']:.0f}, stop stays {sl:.0f}.")
+                _append_log_o(dict(ts=now.isoformat(), event='tp1', date=str(today), direction=t['dir'],
+                                   signal_time=t['signal_time'], entry=e, tp1=t['tp1'], exit_time=tstr(k)))
+            if fav >= 1.5 * R:
+                why, px = 'TP2', t['tp2']; break
+        if why is None and session_over:
+            why, px, k = 'session end', float(x[last_i]), last_i
+        if why:
+            half1 = R if t['tp1_hit'] else s * (px - e)
+            pts = (half1 + s * (px - e)) / 2
+            t.update(status='closed', exit=px, exit_time=tstr(k), why=why, pts=pts)
+            sign = '+' if pts >= 0 else ''
+            alerts.append(f"Agent Indicator: Crude 5m EXIT ({why}): {t['dir']} {e:.0f} → {px:.0f} at {tstr(k)}. "
+                          f"Trade result {sign}{pts:.0f} pts (avg of both halves"
+                          f"{', TP1 booked' if t['tp1_hit'] else ''}).")
+            _append_log_o(dict(ts=now.isoformat(), event=f'exit_{why}', date=str(today), direction=t['dir'],
+                               signal_time=t['signal_time'], entry=e, stop=sl, tp1=t['tp1'], tp2=t['tp2'],
+                               risk=R, exit=px, exit_time=tstr(k), pts=pts, option=t['option']))
+    tmp = STATE_O.with_suffix('.tmp'); json.dump(st, open(tmp, 'w'), indent=2, default=str); tmp.replace(STATE_O)
+    return alerts, meta, st.get('trade')
+
+
+def _now():
+    fake = os.environ.get('CRUDE_FAKE_NOW')
+    return pd.Timestamp(fake).tz_localize('Asia/Kolkata').to_pydatetime() if fake else dt.datetime.now(IST)
+
+
+def main():
+    now = _now(); today = now.date()
+    out = {'alerts': [], 'meta': {'now': now.isoformat(), 'today': str(today)}}
+    fyers = None
+    try:
+        if os.environ.get('CRUDE_REPLAY_FILE'):
+            d, fut_sym = pull_history(None, days_back=21, now=now)
+        else:
+            fyers = get_fyers()
+            try:
+                d, fut_sym = pull_history(fyers, days_back=21, now=now)
+            except Exception as e1:
+                if not _looks_like_auth(scrub(str(e1))):
+                    raise
+                fyers = get_fyers(force=True)  # one forced re-login, then retry
+                d, fut_sym = pull_history(fyers, days_back=21, now=now)
+    except Exception as e:
+        err = scrub(str(e)); st = load_state()
+        if st.get('fyers_auth_alerted_date') != str(today) and (
+                _looks_like_auth(err) or 'history_fail' in err or 'Access' in err or 'LOGIN' in err.upper()):
+            st['fyers_auth_alerted_date'] = str(today); save_state(st)
+            out['alerts'].append('Crude 5m alerts (Agent Indicator + Updated Indicator): Fyers login needs refreshing (token/auth failed).')
+        out['error'] = err[:200]
+        print(json.dumps(out)); return
+    for name, fn in (('Updated Indicator', run_updated), ('Agent Indicator', run_original)):
+        try:
+            a, m, summ = fn(now, d, fut_sym, fyers)
+        except Exception as e:
+            a, m, summ = [], {'error': scrub(str(e))[:200]}, None
+        if name == 'Updated Indicator':
+            a = [x if x.startswith('Updated Indicator:') else f'Updated Indicator: {x}' for x in a]
+        out['alerts'] += a
+        out[name] = {'meta': m, 'state': summ}
+    print(json.dumps(out, default=str))
+
 
 if __name__ == '__main__':
     main()

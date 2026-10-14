@@ -1,0 +1,61 @@
+name: crude-session
+# PRIMARY: one long job per trading day that checks every 5m bar close (+15 s) and sends
+# Telegram alerts within ~30 s. Split into 3 chained jobs (GitHub job limit is 6 h).
+# Started by cron-job.org (workflow_dispatch, reliable) and by the schedule below as backup.
+# Duplicate starts are harmless: concurrency queues them, state-branch dedupe prevents repeats.
+on:
+  schedule:
+    - cron: '0 3 * * 1-5'      # 08:30 IST backup start (GitHub cron may be late)
+  workflow_dispatch:
+
+concurrency:
+  group: crude-live
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  FYERS_APP_ID: ${{ secrets.FYERS_APP_ID }}
+  FYERS_SECRET_ID: ${{ secrets.FYERS_SECRET_ID }}
+  FYERS_CLIENT_ID: ${{ secrets.FYERS_CLIENT_ID }}
+  FYERS_PIN: ${{ secrets.FYERS_PIN }}
+  FYERS_TOTP_KEY: ${{ secrets.FYERS_TOTP_KEY }}
+  FYERS_REDIRECT_URI: ${{ secrets.FYERS_REDIRECT_URI || 'https://127.0.0.1/' }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  GH_TOKEN: ${{ github.token }}
+  CRUDE_LIVE_DIR: ${{ github.workspace }}/state
+
+jobs:
+  part1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: pip }
+      - run: pip install -r requirements.txt && bash scripts/load_state.sh
+      - run: python scripts/session_loop.py --until 14:30
+  part2:
+    needs: part1
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: pip }
+      - run: pip install -r requirements.txt && bash scripts/load_state.sh
+      - run: python scripts/session_loop.py --until 19:55
+  part3:
+    needs: part2
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: pip }
+      - run: pip install -r requirements.txt && bash scripts/load_state.sh
+      - run: python scripts/session_loop.py --until 23:40

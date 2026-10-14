@@ -1,0 +1,50 @@
+name: crude-alerts
+# Single check (both strategies) on demand, or a Telegram test.
+# Uses the same concurrency group as crude-session, so it never runs alongside it,
+# and state-branch dedupe means it never repeats an alert.
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Only send a Telegram test message'
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [crude-check]
+
+concurrency:
+  group: crude-live
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FYERS_APP_ID: ${{ secrets.FYERS_APP_ID }}
+      FYERS_SECRET_ID: ${{ secrets.FYERS_SECRET_ID }}
+      FYERS_CLIENT_ID: ${{ secrets.FYERS_CLIENT_ID }}
+      FYERS_PIN: ${{ secrets.FYERS_PIN }}
+      FYERS_TOTP_KEY: ${{ secrets.FYERS_TOTP_KEY }}
+      FYERS_REDIRECT_URI: ${{ secrets.FYERS_REDIRECT_URI || 'https://127.0.0.1/' }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      GH_TOKEN: ${{ github.token }}
+      CRUDE_LIVE_DIR: ${{ github.workspace }}/state
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: pip }
+      - run: pip install -r requirements.txt
+      - name: Telegram test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test }}
+        run: python scripts/run_crude_alerts.py --test
+      - name: One check + save state
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test) }}
+        run: |
+          bash scripts/load_state.sh
+          python scripts/run_crude_alerts.py
+          bash scripts/save_state.sh
