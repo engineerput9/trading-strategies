@@ -36,11 +36,15 @@ The login token is cached in `common/fyers/.token` (git-ignored) and refreshes d
 ## 6. Run a backtest
 ```
 cd strategies\crude_5m_range_filter\backtest
-python fetch.py       (download 5m crude data, once)
-python dynamic.py     (final plan)
-python rvol08.py      (final plan + 0.8x volume skip)
+python fetch.py       (download 5m crude data from Fyers, once)
+python optreal.py     (download real option quotes, once)
+python base.py
+python dynamic.py
+python options.py
+python rvol08.py      (FINAL plan: expect 110 trades, +7,310 pts)
+python costs.py
 ```
-Results are written as CSVs. Open them in Excel or VS Code.
+The full table is in `strategies/crude_5m_range_filter/backtest/README.md`. Outputs are CSVs; open them in Excel.
 
 ## 7. Run the live check
 ```

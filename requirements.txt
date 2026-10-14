@@ -1,6 +1,6 @@
-fyers-apiv3
-pandas
-numpy
-scipy
-pyotp
-requests
+fyers-apiv3>=3.1
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+pyotp>=2.9
+requests>=2.31

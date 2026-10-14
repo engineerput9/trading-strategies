@@ -2,7 +2,7 @@ import json,pickle,numpy as np,pandas as pd,datetime as dt
 from scipy.stats import norm
 from scipy.optimize import brentq
 IST='Asia/Kolkata'; r=0.065
-t=pd.read_csv('dynamic_trades.csv',parse_dates=['entry_time','exit_time'])
+t=pd.read_csv('../results/dynamic_trades.csv',parse_dates=['entry_time','exit_time'])
 B5=pickle.load(open('_add.pkl','rb'))[0]; d=B5['d']
 raw=json.load(open('optraw.json'))
 def ser(s):

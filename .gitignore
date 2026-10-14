@@ -16,3 +16,6 @@ data/
 live_state.json
 live_log.csv
 .DS_Store
+
+# backtest outputs (regenerated)
+strategies/*/backtest/*.csv

@@ -1,5 +1,5 @@
 exec(open('_rv_base.py').read())
-dt=pd.read_csv('dynamic_trades.csv');assert len(dt)==len(D)
+dt=pd.read_csv('../results/dynamic_trades.csv');assert len(dt)==len(D)
 D['entry_time']=dt.entry_time.values;D['exit_reason']=dt.exit_reason.values;D['pts']=dt.pts.values
 op=pd.read_csv('options_pnl.csv');D['opt']=op.net_pts_slip1.values
 D['IS']=IS;D['month']=pd.to_datetime(D.time.astype(str).str[:7]).dt.strftime('%Y-%m')

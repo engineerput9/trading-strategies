@@ -49,34 +49,3 @@ def st(q,tag,mask=None):
     for p in qq: cc=cc+1 if p<=0 else 0;ls=max(ls,cc)
     md=D['mode'][m] if mask is None else mask[m]
     return dict(rule=tag,n=len(qq),win=round(100*(qq>0).mean(),1),net=round(qq.sum()),net_cost=round((qq-C).sum()),avg_win=round(qq[qq>0].mean(),1),avg_loss=round(qq[qq<=0].mean(),1),DD=round((c.cummax().clip(lower=0)-c).max()),streak=ls,IS=round(qq[isq].sum()),OOS=round(qq[~isq].sum()),IS_cost=round((qq[isq]-C).sum()),OOS_cost=round((qq[~isq]-C).sum()),tight_n=int((md=='tight').sum()),tight_net=round(qq[(md=='tight').values].sum()),locked_n=int((md=='locked').sum()),locked_net=round(qq[(md=='locked').values].sum()))
-rows=[st(D.pts,'baseline')]
-F=['rv_tod10','rv_tod20','rv_20bar','rv_conf','rv_conf_tod','rv_cum']
-for f in F:
-  v=D[f].values
-  for th in (0.8,1.0,1.2,1.5):
-    rows.append(st(np.where(v<th,np.nan,D.pts),f'{f} skip<{th}'))
-  for th in (1.5,2.0,3.0):
-    rows.append(st(np.where(v>th,np.nan,D.pts),f'{f} skip>{th}'))
-  for scope in ('tight','locked'):
-    for th in (0.8,1.0,1.2):
-      q=np.where((D['mode']==scope)&(v<th),np.nan,D.pts);rows.append(st(q,f'{f} skip<{th} {scope}-only'))
-  # mode switch: IS-chosen
-  best=None
-  for th in np.quantile(v[IS&~np.isnan(v)],np.linspace(.1,.9,17)):
-    for dr in (1,-1):
-      for kind in ('replace','and_er'):
-        hi=(v>th) if dr>0 else (v<=th)
-        use=hi if kind=='replace' else (hi&(D['mode']=='tight').values)
-        q=np.where(use,D.tight,D.locked);qi=q[IS].sum()
-        if best is None or qi>best[0]: best=(qi,th,dr,kind,q,use)
-  _,th,dr,kind,q,use=best
-  rows.append(st(q,f"{f} SWITCH({kind}) tight if {'>' if dr>0 else '<='}{th:.2f} [IS-picked]",pd.Series(np.where(use,'tight','locked'))))
-R=pd.DataFrame(rows);b=R.iloc[0]
-R['beats_both']=(R.IS>b.IS)&(R.OOS>b.OOS)
-R['beats_both_cost']=(R.IS_cost>b.IS_cost)&(R.OOS_cost>b.OOS_cost)
-R.to_csv('rvol.csv',index=False);pd.set_option('display.width',400);pd.set_option('display.max_rows',500)
-print(R.to_string(index=False))
-# IS-best skip per feature
-for f in F:
-  sub=R[R.rule.str.startswith(f+' skip')];bi=sub.loc[sub.IS.idxmax()];print('ISbest',bi.rule,bi.IS,bi.OOS,bi.net)
-print(D[F].describe().round(2))

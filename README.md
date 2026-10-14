@@ -12,8 +12,8 @@ strategies/
   crude_5m_range_filter/ Finalised MCX crude 5m strategy
     STRATEGY.md          The rules
     live/live_check.py   Live signal check (run every 5 min in session)
-    backtest/            Backtest scripts (robust.py = core engine)
-    results/             Summary CSVs / trade logs
+    backtest/            Minimal pipeline to reproduce the final plan (see its README)
+    results/             Final trade logs (dynamic_trades, rvol08_trades, monthly)
   _template/             Copy this to start a new strategy
 docs/GETTING_STARTED.md  Step-by-step setup guide
 ```
