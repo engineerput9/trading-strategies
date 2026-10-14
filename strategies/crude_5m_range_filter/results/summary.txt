@@ -1,0 +1,31 @@
+Data 2025-06-02 09:00:00+05:30 -> 2026-10-12 16:35:00+05:30, bars 60022; signals from 2025-06-05 20:40:00+05:30 to 2026-10-12 09:00:00+05:30: 340 trades (170 buy/170 sell)
+Risk pts: median 58.5, mean 85.3
+MFE_R before SL (or EOD): p10 0.13 p25 0.30 med 0.97 p75 2.17 p90 3.99 max 12.33
+MFE pts: p10 5.00 p25 17.75 med 56.50 p75 148.00 p90 296.00 max 1685.00
+Largest MFE: 1685.0 pts / 12.333R on 2025-07-28 10:05:00+05:30
+SL hit rate original stop: 57.6%
+MAE_R full session (no stop): p10 0.15 p25 0.50 med 1.25 p75 2.52 p90 4.82 max 12.18
+TP 1R reached before 1R SL: 49.4%
+TP 1.5R reached before 1R SL: 36.5%
+TP 2R reached before 1R SL: 27.6%
+TP 3R reached before 1R SL: 17.9%
+TP 4R reached before 1R SL: 10.0%
+Winning-ish (SL not hit) MAE_R: p10 0.06 p25 0.19 med 0.42 p75 0.68 p90 0.83 max 0.98
+Original plan (50% TP1/50% TP2, SL, EOD exit): win rate 45.9%, net 25.94R, net 2508 pts, expectancy 0.076R
+  Single TP 1R: win 53.8% exp 0.082R net 2823pts
+  Single TP 1.5R: win 44.1% exp 0.071R net 2194pts
+Top grid (SL & TP in multiples of original risk; tp99=EOD):
+ sl_x_origR  tp_origR   win  exp_per_risk  net_pts
+       0.75       2.5 0.341         0.205  5209.00
+       0.50       2.5 0.259         0.215  4475.00
+       0.75       3.0 0.324         0.219  3982.25
+       2.00       2.5 0.485         0.048  3873.50
+       0.75       4.0 0.309         0.228  3872.00
+       0.75       1.0 0.494         0.137  3755.75
+       1.25       2.5 0.415         0.078  3703.75
+       1.00       2.5 0.376         0.115  3571.50
+Bottom:
+ sl_x_origR  tp_origR   win  exp_per_risk  net_pts
+        2.0      99.0 0.447         0.036   1834.0
+        1.5      99.0 0.403         0.057   1825.0
+        1.0      99.0 0.341         0.092   1630.0

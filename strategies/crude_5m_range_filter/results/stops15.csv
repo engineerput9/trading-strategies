@@ -1,0 +1,76 @@
+stop,targets,period,n,win,net,expR,dd,med_stop
+orig,R-multiple,ALL,93,60.2,4164,0.243,687,103.0
+orig,R-multiple,IS,55,58.2,1942,0.233,328,55.0
+orig,R-multiple,OOS,38,63.2,2222,0.257,687,197.5
+0.5x indicator stop,R-multiple,ALL,93,43.0,1980,0.013,474,51.5
+0.5x indicator stop,R-multiple,IS,55,36.4,820,-0.114,384,27.5
+0.5x indicator stop,R-multiple,OOS,38,52.6,1160,0.199,474,98.8
+0.5x indicator stop,orig pts,ALL,93,38.7,2484,0.098,658,51.5
+0.5x indicator stop,orig pts,IS,55,32.7,991,-0.049,279,27.5
+0.5x indicator stop,orig pts,OOS,38,47.4,1493,0.312,658,98.8
+0.6x indicator stop,R-multiple,ALL,93,41.9,2088,-0.016,597,61.8
+0.6x indicator stop,R-multiple,IS,55,32.7,514,-0.225,573,33.0
+0.6x indicator stop,R-multiple,OOS,38,55.3,1573,0.286,597,118.5
+0.6x indicator stop,orig pts,ALL,93,41.9,2570,0.055,694,61.8
+0.6x indicator stop,orig pts,IS,55,32.7,726,-0.152,429,33.0
+0.6x indicator stop,orig pts,OOS,38,55.3,1844,0.356,694,118.5
+0.75x indicator stop,R-multiple,ALL,93,50.5,3249,0.1,515,77.2
+0.75x indicator stop,R-multiple,IS,55,43.6,975,-0.063,352,41.2
+0.75x indicator stop,R-multiple,OOS,38,60.5,2274,0.337,515,148.1
+0.75x indicator stop,orig pts,ALL,93,50.5,3338,0.128,534,77.2
+0.75x indicator stop,orig pts,IS,55,43.6,1081,-0.02,329,41.2
+0.75x indicator stop,orig pts,OOS,38,60.5,2257,0.343,534,148.1
+1x 15m ATR,R-multiple,ALL,93,47.3,1144,0.161,313,29.3
+1x 15m ATR,R-multiple,IS,55,47.3,541,0.136,143,15.4
+1x 15m ATR,R-multiple,OOS,38,47.4,602,0.197,313,49.9
+1x 15m ATR,orig pts,ALL,93,30.1,1949,0.383,511,29.3
+1x 15m ATR,orig pts,IS,55,30.9,1250,0.493,197,15.4
+1x 15m ATR,orig pts,OOS,38,28.9,699,0.225,511,49.9
+1.5x 15m ATR,R-multiple,ALL,93,44.1,1035,0.059,414,44.0
+1.5x 15m ATR,R-multiple,IS,55,41.8,380,0.014,276,23.1
+1.5x 15m ATR,R-multiple,OOS,38,47.4,656,0.125,414,74.9
+1.5x 15m ATR,orig pts,ALL,93,34.4,1680,0.18,583,44.0
+1.5x 15m ATR,orig pts,IS,55,32.7,833,0.139,295,23.1
+1.5x 15m ATR,orig pts,OOS,38,36.8,847,0.24,583,74.9
+2x 15m ATR,R-multiple,ALL,93,45.2,1501,0.07,480,58.6
+2x 15m ATR,R-multiple,IS,55,38.2,188,-0.073,401,30.7
+2x 15m ATR,R-multiple,OOS,38,55.3,1313,0.277,480,99.8
+2x 15m ATR,orig pts,ALL,93,43.0,2223,0.163,636,58.6
+2x 15m ATR,orig pts,IS,55,38.2,844,0.057,356,30.7
+2x 15m ATR,orig pts,OOS,38,50.0,1379,0.316,636,99.8
+swing 3 bars,R-multiple,ALL,93,48.4,3226,0.078,434,73.0
+swing 3 bars,R-multiple,IS,55,41.8,1030,-0.04,298,35.0
+swing 3 bars,R-multiple,OOS,38,57.9,2196,0.249,434,136.0
+swing 3 bars,orig pts,ALL,93,45.2,2955,0.019,600,73.0
+swing 3 bars,orig pts,IS,55,40.0,1120,-0.081,318,35.0
+swing 3 bars,orig pts,OOS,38,52.6,1834,0.165,600,136.0
+swing 5 bars,R-multiple,ALL,93,52.7,3104,0.141,494,74.0
+swing 5 bars,R-multiple,IS,55,49.1,1288,0.092,318,48.0
+swing 5 bars,R-multiple,OOS,38,57.9,1816,0.213,494,159.5
+swing 5 bars,orig pts,ALL,93,50.5,3276,0.155,548,74.0
+swing 5 bars,orig pts,IS,55,47.3,1336,0.095,356,48.0
+swing 5 bars,orig pts,OOS,38,55.3,1940,0.242,548,159.5
+cap 50 pts,R-multiple,ALL,93,53.8,1012,0.243,262,50.0
+cap 50 pts,R-multiple,IS,55,56.4,624,0.271,206,50.0
+cap 50 pts,R-multiple,OOS,38,50.0,388,0.204,262,50.0
+cap 50 pts,orig pts,ALL,93,40.9,1972,0.45,524,50.0
+cap 50 pts,orig pts,IS,55,50.9,1480,0.582,206,50.0
+cap 50 pts,orig pts,OOS,38,26.3,492,0.259,524,50.0
+cap 60 pts,R-multiple,ALL,93,53.8,1126,0.241,420,60.0
+cap 60 pts,R-multiple,IS,55,58.2,796,0.308,193,55.0
+cap 60 pts,R-multiple,OOS,38,47.4,330,0.145,420,60.0
+cap 60 pts,orig pts,ALL,93,45.2,2472,0.483,674,60.0
+cap 60 pts,orig pts,IS,55,52.7,1524,0.529,193,55.0
+cap 60 pts,orig pts,OOS,38,34.2,948,0.416,674,60.0
+cap 75 pts,R-multiple,ALL,93,52.7,1384,0.251,319,75.0
+cap 75 pts,R-multiple,IS,55,56.4,838,0.292,214,55.0
+cap 75 pts,R-multiple,OOS,38,47.4,546,0.191,319,75.0
+cap 75 pts,orig pts,ALL,93,47.3,2660,0.434,450,75.0
+cap 75 pts,orig pts,IS,55,52.7,1491,0.45,214,55.0
+cap 75 pts,orig pts,OOS,38,39.5,1168,0.41,450,75.0
+5m swing10/ATR14 wider,R-multiple,ALL,93,50.5,3398,0.107,416,66.0
+5m swing10/ATR14 wider,R-multiple,IS,55,41.8,1026,-0.039,301,34.0
+5m swing10/ATR14 wider,R-multiple,OOS,38,63.2,2373,0.318,416,128.5
+5m swing10/ATR14 wider,orig pts,ALL,93,45.2,3067,0.032,594,66.0
+5m swing10/ATR14 wider,orig pts,IS,55,40.0,1154,-0.066,305,34.0
+5m swing10/ATR14 wider,orig pts,OOS,38,52.6,1912,0.175,594,128.5

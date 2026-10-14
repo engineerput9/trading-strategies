@@ -1,0 +1,39 @@
+variant,n,win,net,dd,avgpts,IS_n,IS_win,IS_net,IS_dd,OOS_n,OOS_win,OOS_net,OOS_dd,helps_both,winup_both
+baseline,142,55.6,4668,436,32.9,83,54.2,2243,224,59,57.6,2426,436,False,False
+"stop x1.25, targets in new R",142,50.7,4701,591,33.1,83,45.8,1778,272,59,57.6,2923,591,False,False
+"stop x1.25, same pt targets",142,59.2,4744,540,33.4,83,59.0,2392,272,59,59.3,2351,540,False,True
+"stop x1.5, targets in new R",142,48.6,5032,526,35.4,83,45.8,2061,291,59,52.5,2971,526,False,False
+"stop x1.5, same pt targets",142,60.6,5014,490,35.3,83,60.2,2532,291,59,61.0,2482,490,True,True
+persist 1 bars,142,60.6,4732,436,33.3,83,61.4,2272,243,59,59.3,2460,436,True,True
+persist 2 bars,142,59.2,4916,436,34.6,83,57.8,2394,229,59,61.0,2522,436,True,True
+persist 3 bars,140,58.6,4090,565,29.2,81,58.0,1974,192,59,59.3,2116,565,False,True
+persist 6 bars,137,57.7,3112,545,22.7,78,59.0,1373,224,59,55.9,1740,545,False,False
+no prior 5m flip in 6 bars,132,56.8,4580,418,34.7,78,53.8,1387,208,54,61.1,3192,418,False,False
+no prior 5m flip in 12 bars,129,56.6,4048,324,31.4,78,53.8,1387,208,51,60.8,2660,324,False,False
+no prior 5m flip in 24 bars,112,57.1,3840,324,34.3,65,53.8,1319,257,47,61.7,2521,324,False,False
+no prior 5m flip in 36 bars,100,57.0,3621,377,36.2,58,53.4,1304,151,42,61.9,2317,377,False,False
+chop: flips in 3h <= 1,107,56.1,3484,324,32.6,63,52.4,1242,257,44,61.4,2242,324,False,False
+chop: flips in 3h <= 2,128,57.0,3910,586,30.5,74,56.8,2455,257,54,57.4,1454,586,False,False
+chop: flips in 6h <= 2,97,56.7,3212,377,33.1,54,53.7,1344,257,43,60.5,1868,377,False,False
+chop: flips in 6h <= 3,114,56.1,3047,486,26.7,67,55.2,1504,257,47,57.4,1543,486,False,False
+efficiency 3h >= 0.15,63,57.1,2407,1080,38.2,37,59.5,1726,143,26,53.8,682,1080,False,False
+efficiency 3h >= 0.25,30,56.7,1765,736,58.8,15,60.0,1143,144,15,53.3,622,736,False,False
+efficiency 6h >= 0.15,52,69.2,3345,797,64.3,27,70.4,2004,143,25,68.0,1342,797,False,True
+pullback 0.25R within 6 bars,57,47.4,1272,381,22.3,34,44.1,437,228,23,52.2,835,381,False,False
+pullback 0.25R within 12 bars,70,51.4,1684,381,24.1,45,51.1,897,194,25,52.0,787,381,False,False
+pullback 0.5R within 12 bars,32,18.8,48,148,1.5,22,18.2,92,144,10,20.0,-43,148,False,False
+first flip after 9.5h,147,49.0,3015,494,20.5,88,42.0,980,494,59,59.3,2036,277,False,False
+first flip after 10h,146,49.3,3006,541,20.6,88,42.0,921,541,58,60.3,2084,277,False,False
+first flip after 11h,142,46.5,1900,546,13.4,87,39.1,251,546,55,58.2,1649,277,False,False
+15m confirm: half2 tp 2 be=False,142,52.1,4634,436,32.6,83,48.2,2238,224,59,57.6,2396,436,False,False
+15m confirm: half2 tp 2 be=True,142,61.3,4337,510,30.5,83,60.2,2243,232,59,62.7,2094,510,False,True
+15m confirm: half2 tp 2 be=both,142,47.2,3754,656,26.4,83,45.8,2144,257,59,49.2,1610,656,False,False
+15m confirm: half2 tp 3 be=False,142,51.4,4094,436,28.8,83,47.0,1566,224,59,57.6,2528,436,False,False
+15m confirm: half2 tp 3 be=True,142,61.3,3755,510,26.4,83,60.2,1577,232,59,62.7,2178,510,False,True
+15m confirm: half2 tp 3 be=both,142,47.2,3172,656,22.3,83,45.8,1478,257,59,49.2,1694,656,False,False
+15m confirm: half2 tp EOD be=False,142,50.7,4035,436,28.4,83,45.8,1498,224,59,57.6,2537,436,False,False
+15m confirm: half2 tp EOD be=True,142,61.3,3676,510,25.9,83,60.2,1500,232,59,62.7,2176,510,False,True
+15m confirm: half2 tp EOD be=both,142,47.2,3092,656,21.8,83,45.8,1401,257,59,49.2,1692,656,False,False
+RF period 300 on 5m,139,57.6,5312,427,38.2,81,53.1,2015,204,58,63.8,3297,427,False,False
+persist 2 bars + stop x1.5 same pt targets,142,61.3,5261,525,,83,61.4,2684,250,59,61.0,2578,525,True,True
+persist 1 bar + stop x1.5 same pt targets,142,61.3,5078,513,,83,61.4,2562,262,59,61.0,2516,513,True,True

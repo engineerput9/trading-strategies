@@ -1,0 +1,127 @@
+//@version=6
+indicator("Agent Indicator", overlay=true)
+
+// ================= RANGE FILTER LOGIC =================
+
+src  = input.source(close, "Source")
+per  = input.int(100, "Sampling Period", minval=1)
+mult = input.float(3.0, "Range Multiplier", minval=0.1)
+
+smoothrng(x, t, m)=>
+    wper = (t * 2) - 1
+    avrng = ta.ema(math.abs(x - x[1]), t)
+    ta.ema(avrng, wper) * m
+
+smrng = smoothrng(src, per, mult)
+
+rngfilt(x, r)=>
+    var float rf = x
+    rf := x > nz(rf[1]) ? ((x - r) < nz(rf[1]) ? nz(rf[1]) : (x - r)) :
+         ((x + r) > nz(rf[1]) ? nz(rf[1]) : (x + r))
+    rf
+
+filt = rngfilt(src, smrng)
+
+upward = 0
+upward := filt > filt[1] ? upward[1] + 1 : filt < filt[1] ? 0 : upward[1]
+
+downward = 0
+downward := filt < filt[1] ? downward[1] + 1 : filt > filt[1] ? 0 : downward[1]
+
+longCond =
+     (src > filt and src > src[1] and upward > 0) or
+     (src > filt and src < src[1] and upward > 0)
+
+shortCond =
+     (src < filt and src < src[1] and downward > 0) or
+     (src < filt and src > src[1] and downward > 0)
+
+CondIni = 0
+CondIni := longCond ? 1 : shortCond ? -1 : CondIni[1]
+
+longCondition  = longCond  and CondIni[1] == -1
+shortCondition = shortCond and CondIni[1] == 1
+
+// ================= DAILY SIGNAL FILTER =================
+
+newDay = ta.change(time("D")) != 0
+
+var bool signalPrintedToday = false
+
+if newDay
+    signalPrintedToday := false
+
+// ================= RISK SYSTEM =================
+
+swingLookback = input.int(10, "Swing Lookback")
+atrLength     = input.int(14, "ATR Length")
+atrMult       = input.float(1.0, "ATR Multiplier")
+
+// Shorter targets for 5min timeframe
+rr1           = input.float(1.0, "Target 1 RR")
+rr2           = input.float(1.5, "Target 2 RR")
+
+atr  = ta.atr(atrLength)
+
+prevHigh = ta.highest(high[1], swingLookback)
+prevLow  = ta.lowest(low[1], swingLookback)
+
+var label tradeLabel = na
+
+// ================= BUY OBSERVATION =================
+
+if longCondition and barstate.isconfirmed and not signalPrintedToday
+
+    entry = close
+    slRaw = prevLow
+    slDist = entry - slRaw
+    sl = slDist < atr * atrMult ? entry - atr * atrMult : slRaw
+
+    risk = entry - sl
+    tp1 = entry + risk * rr1
+    tp2 = entry + risk * rr2
+
+    labelText =
+     "Buy Observation @ " + str.tostring(entry, format.mintick) +
+     "\nRef SL @ " + str.tostring(sl, format.mintick) +
+     "\nRef Lvl 1 @ " + str.tostring(tp1, format.mintick) +
+     "\nRef Lvl 2 @ " + str.tostring(tp2, format.mintick)
+
+    tradeLabel := label.new(
+         bar_index,
+         low,
+         labelText,
+         style=label.style_label_left,
+         color=color.green,
+         textcolor=color.white)
+
+    signalPrintedToday := true
+
+// ================= SELL OBSERVATION =================
+
+if shortCondition and barstate.isconfirmed and not signalPrintedToday
+
+    entry = close
+    slRaw = prevHigh
+    slDist = slRaw - entry
+    sl = slDist < atr * atrMult ? entry + atr * atrMult : slRaw
+
+    risk = sl - entry
+    tp1 = entry - risk * rr1
+    tp2 = entry - risk * rr2
+
+    labelText =
+     "Sell Observation @ " + str.tostring(entry, format.mintick) +
+     "\nRef SL @ " + str.tostring(sl, format.mintick) +
+     "\nRef Lvl 1 @ " + str.tostring(tp1, format.mintick) +
+     "\nRef Lvl 2 @ " + str.tostring(tp2, format.mintick)
+
+    tradeLabel := label.new(
+         bar_index,
+         high,
+         labelText,
+         style=label.style_label_left,
+         color=color.red,
+         textcolor=color.white)
+
+    signalPrintedToday := true
