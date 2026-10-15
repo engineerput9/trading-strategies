@@ -11,6 +11,10 @@
     "risk": 181.0,
     "option": "MCX:CRUDEOIL26OCT8950PE",
     "tp1_hit": false,
-    "status": "open"
+    "status": "closed",
+    "exit": 9134.0,
+    "exit_time": "2026-10-15 18:50",
+    "why": "stop",
+    "pts": -181.0
   }
 }
