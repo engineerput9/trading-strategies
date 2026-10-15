@@ -17,11 +17,14 @@ def main():
         sys.path.insert(0, os.path.join(ROOT, 'common', 'fyers'))
         try:
             import fyers_login
+            sys.path.insert(0, os.path.join(ROOT, 'strategies', 'crude_5m_range_filter', 'live'))
+            import live_check
             fy = fyers_login.get_fyers(force=True)
-            r = fy.history({'symbol': 'MCX:CRUDEOIL-I', 'resolution': '5', 'date_format': '1',
+            fut_sym = live_check.resolve_contracts(__import__('datetime').date.today())[0]
+            r = fy.history({'symbol': fut_sym, 'resolution': '5', 'date_format': '1',
                             'range_from': __import__('datetime').date.today().isoformat(),
                             'range_to': __import__('datetime').date.today().isoformat(), 'cont_flag': '1'})
-            fmsg = f"Fyers login OK from GitHub ({len(r.get('candles') or [])} bars today)" if r.get('s') == 'ok' else 'Fyers data FAILED: ' + fyers_login.scrub(r)[:150]
+            fmsg = f"Fyers login OK from GitHub ({fut_sym}: {len(r.get('candles') or [])} bars today)" if r.get('s') == 'ok' else 'Fyers data FAILED: ' + fyers_login.scrub(r)[:150]
         except BaseException as e:
             fmsg = 'Fyers login FAILED from GitHub: ' + type(e).__name__
             try: fmsg += ' ' + fyers_login.scrub(str(e))[:150]

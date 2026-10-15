@@ -139,6 +139,55 @@ def month_code(d):
     return {1:'JAN',2:'FEB',3:'MAR',4:'APR',5:'MAY',6:'JUN',
             7:'JUL',8:'AUG',9:'SEP',10:'OCT',11:'NOV',12:'DEC'}[d.month]
 
+# ---- Contract resolution from Fyers' public MCX symbol master (cached per day) ----
+MASTER_URL = 'https://public.fyers.in/sym_details/MCX_COM.csv'
+ROLL_DAYS = 2  # roll futures to next month this many calendar days before expiry
+
+def _master_rows(day):
+    import csv, io, urllib.request
+    cache = ROOT / f'mcx_master_{day.isoformat()}.csv'
+    if not cache.exists():
+        ROOT.mkdir(parents=True, exist_ok=True)
+        for old in ROOT.glob('mcx_master_*.csv'):
+            try: old.unlink()
+            except Exception: pass
+        data = urllib.request.urlopen(MASTER_URL, timeout=20).read().decode('utf-8', 'replace')
+        cache.write_text(data)
+    rows = []
+    for r in csv.reader(io.StringIO(cache.read_text())):
+        if len(r) > 13 and r[13] == 'CRUDEOIL' and r[9].startswith('MCX:CRUDEOIL'):
+            rows.append(r)
+    return rows
+
+def _exp_date(r):
+    return dt.datetime.fromtimestamp(int(r[8]), IST).date()
+
+def resolve_contracts(day):
+    """Return (futures_symbol, option_prefix, option_expiry_date) for `day`.
+    Futures: earliest CRUDEOIL FUT whose expiry is more than ROLL_DAYS days away.
+    Options: earliest CRUDEOIL option expiry not yet passed (expiry day counts)."""
+    try:
+        rows = _master_rows(day)
+        futs = sorted((_exp_date(r), r[9]) for r in rows if r[9].endswith('FUT'))
+        fut = next(s for e, s in futs if (e - day).days > ROLL_DAYS)
+        opts = sorted({(_exp_date(r), r[9][len('MCX:CRUDEOIL'):len('MCX:CRUDEOIL') + 5])
+                       for r in rows if r[9][-2:] in ('CE', 'PE')})
+        oexp, ocode = next((e, c) for e, c in opts if e >= day)
+        return fut, 'MCX:CRUDEOIL' + ocode, oexp
+    except Exception:
+        # fallback: date rules (fut expiry ~19th, options 2 business days earlier)
+        e = nearest_opt_exp(day)
+        y, m = day.year, day.month
+        if (dt.date(y, m, 19) - day).days <= ROLL_DAYS:
+            m += 1
+            if m > 12: y += 1; m = 1
+        f = dt.date(y, m, 1)
+        return (f'MCX:CRUDEOIL{str(y)[-2:]}{month_code(f)}FUT',
+                f'MCX:CRUDEOIL{str(e.year)[-2:]}{month_code(e)}', e)
+
+def option_symbol(day, K, s):
+    return f"{resolve_contracts(day)[1]}{K}{'CE' if s > 0 else 'PE'}"
+
 def load_state():
     if STATE.exists():
         return json.load(open(STATE))
@@ -172,7 +221,7 @@ def pull_history(fyers, days_back=12, now=None):
     today = now.date()
     fr = (today - dt.timedelta(days=days_back)).isoformat()
     to = today.isoformat()
-    sym = 'MCX:CRUDEOIL26OCTFUT'
+    sym = resolve_contracts(today)[0]
     r = fyers.history({
         'symbol': sym, 'resolution': '5', 'date_format': '1',
         'range_from': fr, 'range_to': to, 'cont_flag': '1'
@@ -391,11 +440,7 @@ def run_updated(now, d, fut_sym, fyers):
                 stop_dist = abs(ee - sl); tgt_dist = abs(tp - ee)
                 # ATM option
                 K = int(round(ee / 50) * 50)
-                exp = nearest_opt_exp(today)
-                mcode = month_code(exp)
-                yy = str(exp.year)[-2:]
-                cp = 'CE' if s > 0 else 'PE'
-                opt_sym = f'MCX:CRUDEOIL{yy}{mcode}{K}{cp}'
+                opt_sym = option_symbol(today, K, s)
                 q = quotes(fyers, [fut_sym, opt_sym])
                 prem = q.get(opt_sym)
                 opt_txt = f"{opt_sym}" + (f" @ {prem:.0f}" if prem is not None else " (premium unavailable)")
@@ -543,8 +588,8 @@ def run_original(now, d, fut_sym, fyers):
         if sig is not None:
             s = int(flip[sig]); e = float(x[sig]); sl = float(stopof(B, sig, s)); R = abs(e - sl)
             tp1, tp2 = e + s * R, e + s * 1.5 * R
-            K = int(round(e / 50) * 50); exp = nearest_opt_exp(today)
-            opt_sym = f"MCX:CRUDEOIL{str(exp.year)[-2:]}{month_code(exp)}{K}{'CE' if s > 0 else 'PE'}"
+            K = int(round(e / 50) * 50)
+            opt_sym = option_symbol(today, K, s)
             prem = quotes(fyers, [opt_sym]).get(opt_sym) if fyers is not None else None
             opt_txt = opt_sym + (f" @ {prem:.0f}" if prem is not None else " (premium unavailable)")
             side = 'BUY' if s > 0 else 'SELL'
