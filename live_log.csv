@@ -1,0 +1,2 @@
+ts,event,date,direction,signal_time,signal_price,reason,entry,stop,target,mode,er,exit,pts,option,rvol
+2026-10-15T09:25:15.620931+05:30,filtered,2026-10-15,short,2026-10-15 09:00,8953.0,gap_filled gap_atr=0.78,,,,,,,,,
