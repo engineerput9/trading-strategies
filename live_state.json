@@ -1,12 +1,9 @@
 {
-  "date": "2026-10-15",
-  "signal_used": true,
+  "date": "2026-10-16",
+  "signal_used": false,
   "signal": null,
   "filtered": {
-    "reason": "gap_filled gap_atr=0.78",
-    "signal_time": "2026-10-15 09:00",
-    "direction": "short",
-    "price": 8953.0
+    "reason": "friday"
   },
   "heads_up_sent": false,
   "entry_sent": false,
