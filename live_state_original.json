@@ -1,20 +1,16 @@
 {
-  "date": "2026-10-15",
+  "date": "2026-10-16",
   "trade": {
     "s": -1,
     "dir": "SELL",
-    "signal_time": "2026-10-15 09:00",
-    "entry": 8953.0,
-    "stop": 9134.0,
-    "tp1": 8772.0,
-    "tp2": 8681.5,
-    "risk": 181.0,
-    "option": "MCX:CRUDEOIL26OCT8950PE",
+    "signal_time": "2026-10-16 09:00",
+    "entry": 9215.0,
+    "stop": 9306.0,
+    "tp1": 9124.0,
+    "tp2": 9078.5,
+    "risk": 91.0,
+    "option": "MCX:CRUDEOIL26NOV9200PE",
     "tp1_hit": false,
-    "status": "closed",
-    "exit": 9134.0,
-    "exit_time": "2026-10-15 18:50",
-    "why": "stop",
-    "pts": -181.0
+    "status": "open"
   }
 }
