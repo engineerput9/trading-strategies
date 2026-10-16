@@ -11,6 +11,10 @@
     "risk": 91.0,
     "option": "MCX:CRUDEOIL26NOV9200PE",
     "tp1_hit": false,
-    "status": "open"
+    "status": "closed",
+    "exit": 9306.0,
+    "exit_time": "2026-10-16 17:00",
+    "why": "stop",
+    "pts": -91.0
   }
 }
